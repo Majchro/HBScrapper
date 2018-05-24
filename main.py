@@ -2,27 +2,31 @@ import requests
 from bs4 import BeautifulSoup
 import re
 
-def site_list(home_url):
-    request = requests.get(home_url)
+
+def bundles_url_list(json_parse_site_url):
+    request = requests.get(json_parse_site_url)
     parsed_site = BeautifulSoup(request.text, "html.parser")
     site_array = []
     for i in re.split("\n", str(parsed_site)):
         site_array.append(i.strip())
     result = [i for i in site_array if i.startswith('var productTiles')]
     packages = re.findall(r"\"product_url\"\:\s\"(.*?)\"",
-                                    str(result[0]).split("[", 1)[-1][:-2])
+                          str(result[0]).split("[", 1)[-1][:-2])
     packages.remove("/monthly")
     return packages
 
 
-def get_package(site_url):
-    req = requests.get("https://www.humblebundle.com"+site_url)
+def humble_title(bundle_title_site_url):
+    request = requests.get("https://www.humblebundle.com" + bundle_title_site_url)
+    ht = BeautifulSoup(request.text, "html.parser")
+    title = ht.title.string
+    return title.split(" (", 1)[0]
 
-    parsed_site = BeautifulSoup(req.text, "html.parser")
 
-    site_title = parsed_site.title.string
+def get_package(get_package_site_url):
+    request = requests.get("https://www.humblebundle.com"+get_package_site_url)
+    parsed_site = BeautifulSoup(request.text, "html.parser")
     tiers_dict = {}
-
     for index, tier in enumerate(parsed_site.select(".dd-game-row")):
         tier_items = []
         for ti in tier.select(".dd-image-box-caption"):
@@ -31,8 +35,8 @@ def get_package(site_url):
             "tier_name": tier.select(".dd-header-headline")[0].text.strip(),
             "tier_items": tier_items
         }
-
-    print(site_title)
+    humble_title(get_package_site_url)
+    print(humble_title(get_package_site_url))
     for i in range(0, len(tiers_dict)):
         print(tiers_dict["tier" + str(i)]["tier_name"])
         for item in tiers_dict["tier" + str(i)]["tier_items"]:
@@ -40,9 +44,8 @@ def get_package(site_url):
 
 
 home_url = "https://www.humblebundle.com"
-available_bundles = site_list(home_url)
+available_bundles = bundles_url_list(home_url)
 for index, bundle in enumerate(available_bundles):
-    print(str(index+1)+" - "+bundle)
-
+    print(str(index+1)+" - "+humble_title(bundle))
 chosen_bundle = int(input("Choose bundle: "))
 get_package(available_bundles[chosen_bundle-1])
