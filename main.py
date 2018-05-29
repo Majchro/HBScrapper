@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import re
+import tkinter as tk
 
 
 class HumbleData:
@@ -42,10 +43,50 @@ class HumbleData:
         #         print("\t-" + item)
 
 
+class Application(tk.Frame):
+    def __init__(self, master=None, humble_bundles=None):
+        super().__init__(master)
+        self.humble_details = humble_bundles
+        self.pack()
+        self.humble_menu()
+        self.dt_frame = tk.Frame()
+        self.dt_frame.pack()
+
+    def humble_menu(self):
+        hb_menu = tk.Menu(self.master)
+        self.master.config(menu=hb_menu)
+        humble_list = tk.Menu(hb_menu, tearoff=False)
+        hb_menu.add_cascade(label="Bundles", menu=humble_list)
+        for title in self.humble_details:
+            humble_list.add_command(label=title["humble_title"],
+                                    command=lambda x=title["humble_title"]: self.show_bundle(x))
+        humble_list.add_command(label="Exit", command=self.quit)
+
+    def details_frame(self, bundle_index):
+        for bundle in self.humble_details:
+            if bundle["humble_title"] == bundle_index:
+                for tier in {i: bundle[i] for i in bundle if i != "humble_title"}:
+                    group = tk.LabelFrame(self.dt_frame, text=bundle[tier]["tier_name"])
+                    group.pack(fill="both", expand="yes")
+                    for item in bundle[tier]["tier_items"]:
+                        w = tk.Label(group, text=item)
+                        w.pack()
+
+    def erase_frame(self):
+        for widget in self.dt_frame.winfo_children():
+            widget.destroy()
+
+    def show_bundle(self, bundle):
+        self.erase_frame()
+        self.details_frame(bundle)
+
+
 home_url = "https://www.humblebundle.com"
 site_data = HumbleData(home_url)
 humble_bundle = site_data.bundle_details()
-for index, bundle in enumerate(humble_bundle):
-    print(str(index+1)+" - "+bundle["humble_title"])
-chosen_bundle = int(input("Choose bundle: "))
-print(humble_bundle[chosen_bundle-1])
+root = tk.Tk()
+root.geometry("700x960")
+root.resizable(False, False)
+root.title("Humble Bundle Scrapper")
+app = Application(master=root, humble_bundles=humble_bundle)
+app.mainloop()
